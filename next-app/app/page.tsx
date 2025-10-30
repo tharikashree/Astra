@@ -5,12 +5,12 @@ import { useSession, signIn } from "next-auth/react";
 import { useEffect} from "react";
 import { Calendar, MessageSquare, Mail, BarChart3, Clock, Menu, X, Send, User, Lock, ArrowRight, CheckCircle, Bell, Settings, LogOut } from 'lucide-react';
 
-export default function WorkTwinApp() {
+export default function AstraApp() {
   const [currentPage, setCurrentPage] = useState('home');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [chatMessages, setChatMessages] = useState([
-    { role: 'assistant', content: 'Hello! I\'m your WorkTwin assistant. How can I help you today?' }
+    { role: 'assistant', content: 'Hello! I\'m your Astra assistant. How can I help you today?' }
   ]);
   const [inputMessage, setInputMessage] = useState('');
 
@@ -23,7 +23,7 @@ export default function WorkTwinApp() {
             <User className="w-8 h-8 text-indigo-600" />
           </div>
           <h2 className="text-3xl font-bold text-gray-800">Welcome Back</h2>
-          <p className="text-gray-600 mt-2">Log in to your WorkTwin account</p>
+          <p className="text-gray-600 mt-2">Log in to your Astra account</p>
         </div>
         
         <form onSubmit={(e) => { e.preventDefault(); setIsLoggedIn(true); setCurrentPage('dashboard'); }}>
@@ -83,7 +83,7 @@ export default function WorkTwinApp() {
             <User className="w-8 h-8 text-indigo-600" />
           </div>
           <h2 className="text-3xl font-bold text-gray-800">Create Account</h2>
-          <p className="text-gray-600 mt-2">Join WorkTwin and boost your productivity</p>
+          <p className="text-gray-600 mt-2">Join Astra and boost your productivity</p>
         </div>
         
         <form onSubmit={(e) => { e.preventDefault(); setIsLoggedIn(true); setCurrentPage('dashboard'); }}>
@@ -160,9 +160,9 @@ export default function WorkTwinApp() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">WT</span>
+                <span className="text-white font-bold text-xl">AT</span>
               </div>
-              <span className="text-xl font-bold text-gray-800">WorkTwin</span>
+              <span className="text-xl font-bold text-gray-800">Astra</span>
             </div>
             
             <div className="flex gap-4">
@@ -189,7 +189,7 @@ export default function WorkTwinApp() {
             Your Digital Twin for<br />Smarter Work Management
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            WorkTwin uses AI to manage your tasks, emails, meetings, and decisions—so you can focus on what matters most.
+            Astra uses AI to manage your tasks, emails, meetings, and decisions—so you can focus on what matters most.
           </p>
           <button 
             onClick={() => setCurrentPage('signup')}
@@ -227,7 +227,7 @@ export default function WorkTwinApp() {
 
         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-12 text-center">
           <h2 className="text-3xl font-bold text-gray-800 mb-4">Ready to get started?</h2>
-          <p className="text-gray-600 mb-6">Join thousands of professionals who trust WorkTwin</p>
+          <p className="text-gray-600 mb-6">Join thousands of professionals who trust Astra</p>
           <button 
             onClick={() => setCurrentPage('signup')}
             className="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
@@ -246,9 +246,9 @@ export default function WorkTwinApp() {
         {sidebarOpen && (
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">WT</span>
+              <span className="text-white font-bold">AT</span>
             </div>
-            <span className="font-bold text-gray-800">WorkTwin</span>
+            <span className="font-bold text-gray-800">Astra</span>
           </div>
         )}
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-gray-100 rounded-lg">
@@ -358,7 +358,7 @@ export default function WorkTwinApp() {
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Ask WorkTwin anything..."
+            placeholder="Ask Astra anything..."
             className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
           />
           <button

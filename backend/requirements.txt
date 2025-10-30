@@ -7,3 +7,6 @@ langchain
 langgraph
 streamlit
 uvicorn
+google-generativeai
+dotenv
+google-auth-httplib2
