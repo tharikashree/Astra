@@ -1,3 +1,4 @@
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
@@ -34,3 +35,39 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+=======
+# Conversational Google Calendar Booking Bot
+
+This is an AI-powered calendar booking assistant using FastAPI, LangGraph, Streamlit, and Gemini API.
+
+## Features
+- Conversational chat interface via Streamlit
+- Google Calendar integration using a service account
+- Check free/busy slots and create bookings
+
+## Setup
+
+1. Create a service account in Google Cloud Console.
+2. Share your Google Calendar with the service account.
+3. Put the JSON file `service_account.json`.
+4. Add your `.env` file with GEMINI key and Calendar ID.
+
+## Run Locally
+
+```bash
+cd backend
+uvicorn main:app --reload
+```
+
+```bash
+cd frontend
+streamlit run app.py
+```
+
+## Example `.env`
+
+```env
+GEMINI_API_KEY=your_gemini_key_here
+CALENDAR_ID=your_calendar_id@gmail.com
+```
+
