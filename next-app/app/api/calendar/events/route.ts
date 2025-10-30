@@ -1,64 +1,109 @@
-import { google } from "googleapis";
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
+import { use } from "react";
 
+// Define your FastAPI backend URL using an environment variable,
+// falling back to localhost:8000 if the variable is not set.
+const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
+
+/**
+ * Helper to ensure the user is authenticated and get their email (our user_id).
+ */
+async function authenticateUser(req: NextRequest) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+  // Use token.email as the persistent user identifier (user_id)
+  if (!token || !token.email) {
+    return { error: "Unauthorized", status: 401 };
+  }
+  return { user_id: token.email };
+}
+
+/**
+ * Handles GET requests to fetch data from the backend.
+ * Route: /api/calendar/events (Proxies to /chat POST request)
+ */
 export async function GET(req: NextRequest) {
-  try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const auth = await authenticateUser(req);
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+  const { user_id } = auth;
 
-    if (!token || !token.access_token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    // Forward the request to the FastAPI backend, passing the user_id and an empty message,
+    // which is required by the backend's chat structure (HumanMessage content).
+    const response = await fetch(`${BACKEND_URL}/chat`, {
+      method: "POST", // We use POST to securely pass the user_id in the body
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: user_id, message: "fetch calendar events" }), // <-- FIX: Added empty message
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      // Forward the error status from the backend (e.g., 401 if token is missing)
+      return NextResponse.json({ error: data.message || "Backend API error" }, { status: response.status });
     }
 
-    const calendar = google.calendar({
-      version: "v3",
-      headers: { Authorization: `Bearer ${token.access_token}` },
-    });
+    // Application-level error check: If the chat response contains a known failure message
+    // (like from a failed tool use for calendar actions or email summary), return a 400 error status.
+    const replyMessage = data.reply || "";
+    if (
+      replyMessage.startsWith("Failed to schedule:") ||
+      replyMessage.startsWith("Failed to summarize email:") || // <-- Added check for email summarization failure
+      replyMessage.includes("Authorization error:")
+    ) {
+        console.error("Application-level transactional error detected in chat reply:", replyMessage);
+        // Returning 400 Bad Request to signal a transactional failure to the client.
+        return NextResponse.json({ error: replyMessage }, { status: 400 });
+    }
 
-    const events = await calendar.events.list({
-      calendarId: "primary",
-      maxResults: 10,
-      orderBy: "startTime",
-      singleEvents: true,
-    });
-
-    return NextResponse.json({ items: events.data.items || [] });
+    // Forward the successful response data
+    return NextResponse.json(data);
   } catch (err: any) {
-    console.error("Calendar fetch error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    // Explicitly note the failure to connect to the backend URL
+    console.error("Proxy error during GET /calendar/events:", err.message);
+    return NextResponse.json({ error: `Failed to connect to backend service at ${BACKEND_URL}. Ensure your FastAPI server is running.` }, { status: 500 });
   }
 }
 
+/**
+ * Handles POST requests to create a new calendar event via the backend.
+ * Route: /api/calendar/events
+ */
 export async function POST(req: NextRequest) {
+  const auth = await authenticateUser(req);
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+  const { user_id } = auth;
+
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    if (!token || !token.access_token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const requestBody = await req.json();
 
-    const { summary, start, end } = await req.json();
+    // Prepare data to send to the backend, including user_id and event details
+    const dataToSend = {
+      user_id: user_id,
+      ...requestBody,
+    };
 
-    if (!summary || !start || !end) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-    }
-
-    const calendar = google.calendar({
-      version: "v3",
-      headers: { Authorization: `Bearer ${token.access_token}` },
+    // Forward the request to the FastAPI backend
+    const response = await fetch(`${BACKEND_URL}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dataToSend),
     });
 
-    const event = await calendar.events.insert({
-      calendarId: "primary",
-      requestBody: {
-        summary,
-        start: { dateTime: start, timeZone: "Asia/Kolkata" },
-        end: { dateTime: end, timeZone: "Asia/Kolkata" },
-      },
-    });
+    const data = await response.json();
 
-    return NextResponse.json({ event: event.data }); // ✅ Always return valid JSON
+    if (!response.ok) {
+      return NextResponse.json({ error: data.message || "Backend event creation failed." }, { status: response.status });
+    }
+
+    return NextResponse.json(data);
   } catch (err: any) {
-    console.error("Error creating event:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("Proxy error during POST /calendar/events:", err);
+    return NextResponse.json({ error: `Failed to connect to backend service at ${BACKEND_URL} or parse request.` }, { status: 500 });
   }
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useSession, signIn } from "next-auth/react";
+import { useSession, signIn, signOut } from "next-auth/react";
 import { useEffect} from "react";
 import { Calendar, MessageSquare, Mail, BarChart3, Clock, Menu, X, Send, User, Lock, ArrowRight, CheckCircle, Bell, Settings, LogOut } from 'lucide-react';
 
@@ -9,10 +9,10 @@ export default function AstraApp() {
   const [currentPage, setCurrentPage] = useState('home');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [chatMessages, setChatMessages] = useState([
-    { role: 'assistant', content: 'Hello! I\'m your Astra assistant. How can I help you today?' }
-  ]);
-  const [inputMessage, setInputMessage] = useState('');
+  
+  // Use session to determine authentication status globally
+  const { data: session, status } = useSession();
+  const isUserAuthenticated = status === 'authenticated' || isLoggedIn; // Use session status for core check
 
   // Auth Pages
   const LoginPage = () => (
@@ -26,7 +26,7 @@ export default function AstraApp() {
           <p className="text-gray-600 mt-2">Log in to your Astra account</p>
         </div>
         
-        <form onSubmit={(e) => { e.preventDefault(); setIsLoggedIn(true); setCurrentPage('dashboard'); }}>
+        <form onSubmit={(e) => { e.preventDefault(); }}>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
@@ -57,10 +57,11 @@ export default function AstraApp() {
             </div>
             
             <button 
-              type="submit"
-              className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-medium flex items-center justify-center gap-2"
+              type="button"
+              onClick={() => signIn('google')}
+              className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition font-medium flex items-center justify-center gap-2"
             >
-              Log In <ArrowRight className="w-4 h-4" />
+              Sign in with Google (Required) <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </form>
@@ -86,7 +87,7 @@ export default function AstraApp() {
           <p className="text-gray-600 mt-2">Join Astra and boost your productivity</p>
         </div>
         
-        <form onSubmit={(e) => { e.preventDefault(); setIsLoggedIn(true); setCurrentPage('dashboard'); }}>
+        <form onSubmit={(e) => { e.preventDefault(); signIn('google'); }}>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
@@ -136,8 +137,9 @@ export default function AstraApp() {
             <button 
               type="submit"
               className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-medium flex items-center justify-center gap-2"
+              onClick={() => signIn('google')}
             >
-              Create Account <ArrowRight className="w-4 h-4" />
+              Create Account (with Google) <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </form>
@@ -287,7 +289,11 @@ export default function AstraApp() {
           {sidebarOpen && <span>Settings</span>}
         </button>
         <button 
-          onClick={() => { setIsLoggedIn(false); setCurrentPage('home'); }}
+          onClick={() => { 
+            // Proper NextAuth logout that clears the session
+            signOut({ callbackUrl: '/' }); 
+            setIsLoggedIn(false); setCurrentPage('home'); 
+          }}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition"
         >
           <LogOut className="w-5 h-5" />
@@ -297,81 +303,131 @@ export default function AstraApp() {
     </div>
   );
 
- const ChatInterface = () => {
-  const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([]);
-  const [inputMessage, setInputMessage] = useState("");
+  // Corrected Chat Interface
+  const ChatInterface = () => {
+    const { data: session } = useSession(); 
+    
+    const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>(
+      [{ role: 'assistant', content: `Hello! I'm your Astra assistant. You are signed in as **${session?.user?.email}**. Ask me to **schedule a meeting**, **send an email**, or **summarize your last email**.` }]
+    );
+    const [inputMessage, setInputMessage] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [context, setContext] = useState({}); // State for conversational context
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputMessage.trim()) return;
+    const handleSendMessage = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!inputMessage.trim() || isLoading) return;
 
-    setChatMessages([...chatMessages, { role: "user", content: inputMessage }]);
+      // CRITICAL: Use the user's authenticated email as the persistent user_id
+      const userId = session?.user?.email;
 
-    setTimeout(() => {
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content:
-            "I understand you need help with that. Let me analyze your schedule and provide recommendations.",
-        },
-      ]);
-    }, 1000);
+      if (!userId) {
+          setChatMessages((prev) => [...prev, { role: "assistant", content: "❌ Error: User identifier is missing. Please log in with Google to use the assistant." }]);
+          setInputMessage("");
+          return;
+      }
 
-    setInputMessage("");
-  };
+      const userMessage = inputMessage;
+      setChatMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+      setInputMessage("");
+      setIsLoading(true);
 
-  return (
-    <div className="flex-1 flex flex-col bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-bold text-gray-800">Chat Assistant</h2>
-          <p className="text-sm text-gray-600">Your AI-powered productivity companion</p>
-        </div>
-        <button className="p-2 hover:bg-gray-100 rounded-lg">
-          <Bell className="w-5 h-5 text-gray-600" />
-        </button>
-      </div>
+      try {
+        const res = await fetch("http://localhost:8000/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: userMessage,
+            context: context,
+            user_id: userId, // <-- CRITICAL: Pass the user ID (email)
+          }),
+        });
 
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {chatMessages.map((msg, idx) => (
-          <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div
-              className={`max-w-2xl rounded-2xl px-6 py-4 ${
-                msg.role === "user"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white border border-gray-200 text-gray-800"
-              }`}
-            >
-              <p>{msg.content}</p>
-            </div>
+        const data = await res.json();
+        setContext(data.context);
+        
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: data.reply || "Sorry, I encountered an unknown error.",
+          },
+        ]);
+      } catch (error) {
+        console.error("Chat API Error:", error);
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "Sorry, I couldn't connect to the FastAPI backend service. Check the server status (http://localhost:8000/chat).",
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    return (
+      <div className="flex-1 flex flex-col bg-gray-50">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">Chat Assistant</h2>
+            <p className="text-sm text-gray-600">Your AI-powered productivity companion</p>
           </div>
-        ))}
-      </div>
-
-      {/* Input Area */}
-      <div className="bg-white border-t border-gray-200 p-4">
-        <form onSubmit={handleSendMessage} className="flex gap-2">
-          <input
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Ask Astra anything..."
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
-          />
-          <button
-            type="submit"
-            className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center gap-2"
-          >
-            <Send className="w-5 h-5" />
+          <button className="p-2 hover:bg-gray-100 rounded-lg">
+            <Bell className="w-5 h-5 text-gray-600" />
           </button>
-        </form>
+        </div>
+
+        {/* Chat Messages */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {chatMessages.map((msg, idx) => (
+            <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div
+                className={`max-w-2xl rounded-2xl px-6 py-4 ${
+                  msg.role === "user"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white border border-gray-200 text-gray-800"
+                }`}
+              >
+                <p>{msg.content}</p>
+              </div>
+            </div>
+          ))}
+          {/* Loading Indicator */}
+          {isLoading && (
+              <div className="flex justify-start">
+                  <div className="max-w-xs rounded-2xl px-6 py-4 bg-white border border-gray-200 text-gray-800">
+                      <div className="animate-pulse">Astra is typing...</div>
+                  </div>
+              </div>
+          )}
+        </div>
+
+        {/* Input Area */}
+        <div className="bg-white border-t border-gray-200 p-4">
+          <form onSubmit={handleSendMessage} className="flex gap-2">
+            <input
+              type="text"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder={!session ? "Please log in to chat..." : "Ask Astra anything, e.g., 'send email to...'"}
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+              disabled={!session || isLoading}
+            />
+            <button
+              type="submit"
+              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center gap-2 disabled:bg-gray-400"
+              disabled={!session || isLoading}
+            >
+              <Send className="w-5 h-5" />
+            </button>
+          </form>
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   // Calendar View
  const CalendarView = () => {
@@ -384,6 +440,8 @@ export default function AstraApp() {
       if (!session) return;
       setLoading(true);
       try {
+        // This frontend API route relies on the short-lived access token,
+        // which NextAuth provides via its JWT/session handling for the calendar API
         const res = await fetch("/api/calendar/events");
         const data = await res.json();
         if (data.items) setEvents(data.items);
@@ -432,7 +490,7 @@ export default function AstraApp() {
               <button
   onClick={async () => {
     const event = {
-      summary: "Test Event from Work Twin",
+      summary: "Test Event from Astra",
       start: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour from now
       end: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
     };
@@ -445,9 +503,11 @@ export default function AstraApp() {
 
     const data = await res.json();
     if (res.ok) {
+      // Use custom modal instead of alert in production
       alert("✅ Event created: " + data.event.summary);
       window.location.reload();
     } else {
+      // Use custom modal instead of alert in production
       alert("❌ Failed to create event: " + data.error);
     }
   }}
@@ -547,7 +607,7 @@ export default function AstraApp() {
 };
 
   // Render based on current page
-  if (!isLoggedIn) {
+  if (!isUserAuthenticated) {
     if (currentPage === 'login') return <LoginPage />;
     if (currentPage === 'signup') return <SignupPage />;
     return <HomePage />;
@@ -563,7 +623,7 @@ export default function AstraApp() {
           <div className="text-center">
             <Mail className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-gray-800">Email Hub</h3>
-            <p className="text-gray-600">Coming soon</p>
+            <p className="text-gray-600">Ask Astra to send or summarize emails in the Chat Assistant tab.</p>
           </div>
         </div>
       )}

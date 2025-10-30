@@ -10,3 +10,5 @@ uvicorn
 google-generativeai
 dotenv
 google-auth-httplib2
+supabase
+dateparser

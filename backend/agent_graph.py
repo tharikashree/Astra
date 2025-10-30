@@ -5,9 +5,11 @@ from typing import TypedDict, List, Union
 from datetime import datetime, timedelta
 import google.generativeai as genai
 from google_calendar import create_event
+from gmail_tools import send_email_message, summarize_last_email
 import os
 import json
 import re
+import dateparser
 import dotenv
 
 dotenv.load_dotenv()
@@ -15,7 +17,7 @@ dotenv.load_dotenv()
 # ==== Gemini Setup ====
 schedule_meeting_function = {
     "name": "schedule_meeting",
-    "description": "Schedules a meeting at a given time and date.",
+    "description": "Schedules a meeting at a given time and date. Only use this for scheduling.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -27,6 +29,28 @@ schedule_meeting_function = {
     }
 }
 
+# Email sending function declaration
+send_email_function = {
+    "name": "send_email_message",
+    "description": "Sends an email to a recipient with a subject and body.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "to_email": {"type": "string", "description": "The recipient's full email address."},
+            "subject": {"type": "string", "description": "The subject line of the email."},
+            "body": {"type": "string", "description": "The content of the email message."}
+        },
+        "required": ["to_email", "subject", "body"]
+    }
+}
+
+# Email summarization function declaration
+summarize_email_function = {
+    "name": "summarize_last_email",
+    "description": "Fetches and summarizes the content of the last received email in the user's inbox.",
+    "parameters": {"type": "object", "properties": {}, "required": []}
+}
+
 google_api_key = os.getenv("GEMINI_API_KEY")
 if not google_api_key:
     raise ValueError("GEMINI_API_KEY is not set in the environment.")
@@ -35,7 +59,7 @@ genai.configure(api_key=google_api_key)
 
 model = genai.GenerativeModel(
     model_name="gemini-2.5-flash",
-    tools=[{"function_declarations": [schedule_meeting_function]}]
+    tools=[{"function_declarations": [schedule_meeting_function, send_email_function, summarize_email_function]}]
 )
 
 # ==== LangGraph State ====
@@ -44,6 +68,7 @@ MessageList = List[Union[HumanMessage, AIMessage, ToolMessage]]
 class AgentState(TypedDict):
     messages: MessageList
     context: dict
+    user_id: str
 
 # ==== Convert messages to Gemini-compatible format ====
 def to_gemini_messages(messages: List[Union[HumanMessage, AIMessage, ToolMessage]]) -> List[dict]:
@@ -60,15 +85,10 @@ def to_gemini_messages(messages: List[Union[HumanMessage, AIMessage, ToolMessage
 def normalize_date(date_str):
     if not date_str:
         return None
-    date_str = date_str.lower()
-    if "tomorrow" in date_str:
-        return (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
-    try:
-        # Try to parse standard date
-        parsed = datetime.strptime(date_str, "%Y-%m-%d")
+    parsed = dateparser.parse(date_str)
+    if parsed:
         return parsed.strftime("%Y-%m-%d")
-    except:
-        return date_str  # fallback to raw if unsure
+    return date_str
 
 def normalize_time(time_str):
     if not time_str:
@@ -84,7 +104,20 @@ def normalize_time(time_str):
     except:
         return time_str  # fallback
 
+def preprocess_user_text(user_text: str) -> str:
+    """Converts relative date words like 'tomorrow' or 'today' to explicit dates."""
+    today = datetime.now()
+    replacements = {
+        "today": today.strftime("%Y-%m-%d"),
+        "tomorrow": (today + timedelta(days=1)).strftime("%Y-%m-%d"),
+    }
+    for word, date_str in replacements.items():
+        user_text = re.sub(rf"\b{word}\b", date_str, user_text, flags=re.IGNORECASE)
+    return user_text
+
+
 def extract_with_gemini(user_text: str, prev_context: dict) -> dict:
+    user_text = preprocess_user_text(user_text)
     missing = [k for k in ["date", "time", "topic"] if not prev_context.get(k)]
     instruction = (
         "You are an assistant that extracts missing meeting details from the user message.\n"
@@ -130,6 +163,25 @@ class GeminiFunctionAgent(Runnable):
         response = model.generate_content(gemini_msgs)
         content = response.candidates[0].content
 
+        # Check for immediate function call (used for all tools, including new email tools)
+        if response.candidates and response.candidates[0].content.parts[0].function_call:
+            call = response.candidates[0].content.parts[0].function_call
+            function_call = {
+                "name": call.name,
+                "args": dict(call.args)
+            }
+            ai_msg = AIMessage(
+                content=f"Attempting to call {call.name}...",
+                additional_kwargs={"function_call": function_call}
+            )
+            # Route directly to tool executor for execution
+            return {
+                "messages": state["messages"] + [ai_msg],
+                "context": state["context"],
+                "user_id": state["user_id"],
+                "next": "tool"
+            }
+        
         last_user_msg = next(
             (msg.content for msg in reversed(state["messages"]) if isinstance(msg, HumanMessage)), ""
         )
@@ -159,6 +211,7 @@ class GeminiFunctionAgent(Runnable):
             return {
                 "messages": state["messages"] + [ai_msg],
                 "context": merged_context,
+                "user_id": state["user_id"],
                 "next": "tool"
             }
 
@@ -167,26 +220,57 @@ class GeminiFunctionAgent(Runnable):
         return {
             "messages": state["messages"] + [ai_msg],
             "context": merged_context,
+            "user_id": state["user_id"],
             "next": "end"
         }
 
 # ==== Tool Executor ====
 def tool_executor(state: AgentState) -> AgentState:
     call = state["messages"][-1].additional_kwargs.get("function_call")
-    if call and call["name"] == "schedule_meeting":
-        result = create_event(**call["args"])
-        return {
-            "messages": state["messages"] + [
-                ToolMessage(
-                    name=call["name"],
-                    content=str(result),
-                    tool_call_id="tool_call_id_fallback"
-                )
-            ],
-            "context": state["context"],
-            "next": "end"
-        }
-    return {**state, "next": "end"}
+    if not call:
+        return {**state, "next": "end"}
+
+    tool_name = call["name"]
+    tool_args = call["args"]
+    user_id = state["user_id"]
+    result = {"status": "error", "message": "Unknown function call."}
+    
+    user_result_msg = ""
+    
+    tool_args_with_user = {**tool_args, "user_id": user_id}
+
+    if tool_name == "schedule_meeting":
+        result = create_event(**tool_args_with_user)
+        user_result_msg = f"Meeting scheduled: {result.get('eventLink', 'See result for details')}" if result.get('status') == 'success' else f"Failed to schedule: {result.get('message', 'Unknown error')}"
+
+    elif tool_name == "send_email_message": 
+        result = send_email_message(**tool_args_with_user)
+        user_result_msg = f"Email sent successfully to {tool_args.get('to_email')}. Status: {result.get('status')}." if result.get('status') == 'success' else f"Failed to send email: {result.get('message', 'Unknown error')}"
+        
+    elif tool_name == "summarize_last_email": 
+        result = summarize_last_email(**tool_args_with_user)
+        if result.get('status') == 'success':
+            user_result_msg = f"Last email summary: **{result['summary']}**"
+        else:
+            user_result_msg = f"Failed to summarize email: {result.get('message', 'Unknown error')}"
+        
+    else:
+        user_result_msg = f"Unknown command: {tool_name}"
+
+    # Append the execution result and the final user-facing reply
+    return {
+        "messages": state["messages"] + [
+            ToolMessage(
+                name=tool_name,
+                content=str(result),
+                tool_call_id="tool_call_id_fallback"
+            ),
+            AIMessage(content=user_result_msg) 
+        ],
+        "context": state["context"],
+        "user_id": user_id,
+        "next": "end"
+    }
 
 # ==== LangGraph Setup ====
 graph = StateGraph(AgentState)

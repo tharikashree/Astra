@@ -6,56 +6,64 @@ import dotenv
 import pytz
 import os
 import re
+from supabase_client import load_credentials
 
 dotenv.load_dotenv()
 
-SERVICE_ACCOUNT_FILE = 'service_account.json'
-SCOPES = ['https://www.googleapis.com/auth/calendar']
-CALENDAR_ID = os.getenv("CALENDAR_ID")
+CALENDAR_ID_DEFAULT = 'primary'
+TZ_KOLKATA = "Asia/Kolkata"
 
-credentials = service_account.Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_FILE, scopes=SCOPES
-)
-calendar_service = build('calendar', 'v3', credentials=credentials)
+def get_calendar_service(user_id: str):
+    """Loads credentials from Supabase, refreshes if needed, and builds the service."""
+    creds = load_credentials(user_id)
+    if not creds:
+        return None, "User not authorized or session expired. Please re-connect your calendar."
 
+    service = build('calendar', 'v3', credentials=creds)
+    return service, None
 
 # Basic email validation
 def is_valid_email(email):
     pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
     return re.match(pattern, email) is not None
 
-def is_time_slot_available(start_dt, end_dt):
+def is_time_slot_available(service, start_dt, end_dt):
     body = {
         "timeMin": start_dt.isoformat(),
         "timeMax": end_dt.isoformat(),
-        "timeZone": "Asia/Kolkata",
-        "items": [{"id": CALENDAR_ID}]
+        "timeZone": TZ_KOLKATA,
+        "items": [{"id": CALENDAR_ID_DEFAULT}]
     }
 
     try:
-        response = calendar_service.freebusy().query(body=body).execute()
-        busy_times = response["calendars"][CALENDAR_ID]["busy"]
+        response = service.freebusy().query(body=body).execute()
+        busy_times = response["calendars"][CALENDAR_ID_DEFAULT].get("busy", [])
         return len(busy_times) == 0  # True = free
     except Exception as e:
         return {
             "status": "error",
-            "message": str(e)
+            "message": f"Calendar API error: {str(e)}"
         }
 
-def create_event(date, time, topic):
+def create_event(user_id: str, date, time, topic):
+    """Schedules an event for the given user ID."""
+    service, error = get_calendar_service(user_id)
+    if error:
+        return {"status": "error", "message": f"Authorization error: {error}"}
+
     try:
         # Parse and sanitize natural language input
         start_dt = parser.parse(f"{date} {time}", fuzzy=True)
         end_dt = start_dt + datetime.timedelta(hours=1)
 
-        tz = pytz.timezone("Asia/Kolkata")
+        tz = pytz.timezone(TZ_KOLKATA)
         start_dt = tz.localize(start_dt)
         end_dt = tz.localize(end_dt)
 
         # Check slot availability
-        availability = is_time_slot_available(start_dt, end_dt)
+        availability = is_time_slot_available(service, start_dt, end_dt)
         if isinstance(availability, dict) and availability.get("status") == "error":
-            return availability  # propagate error
+            return availability
 
         if not availability:
             return {
@@ -65,12 +73,13 @@ def create_event(date, time, topic):
         
         event = {
             "summary": topic,
-            "start": {"dateTime": start_dt.isoformat(), "timeZone": "Asia/Kolkata"},
-            "end": {"dateTime": end_dt.isoformat(), "timeZone": "Asia/Kolkata"}
+            "start": {"dateTime": start_dt.isoformat(), "timeZone": TZ_KOLKATA},
+            "end": {"dateTime": end_dt.isoformat(), "timeZone": TZ_KOLKATA}
         }
 
-        result = calendar_service.events().insert(
-            calendarId=CALENDAR_ID, body=event
+        result = service.events().insert(
+            calendarId=CALENDAR_ID_DEFAULT, 
+            body=event
         ).execute()
 
         return {
@@ -80,4 +89,4 @@ def create_event(date, time, topic):
         }
 
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": f"Event creation failed: {str(e)}"}

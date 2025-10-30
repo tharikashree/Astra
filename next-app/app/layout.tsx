@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 
 // Page metadata
 export const metadata: Metadata = {
-  title: "Google Calendar Integration",
-  description: "Next.js + NextAuth + Google Calendar",
+  title: "Astra AI Assistant",
+  description: "AI-powered productivity companion with Google integration.",
 };
 
 // Root layout with NextAuth Providers and custom fonts
