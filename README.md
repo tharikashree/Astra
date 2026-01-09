@@ -3,6 +3,22 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 The Cognitive Digital Twin project leverages AI to act as a personal assistant capable of understanding user intent, scheduling Google Meet meetings, and drafting professional emails automatically. By integrating natural language processing and intelligent decision-making, the system helps optimize productivity, reduce manual effort, and streamline daily communication tasks.
 
+Main Features:
+
+Automated Meeting Scheduling: AI can understand user preferences and schedule Google Meet meetings seamlessly.
+
+Email Drafting & Sending: Generates professional emails based on context and can send them automatically or draft for review.
+
+Natural Language Understanding: Interprets user commands in plain English to perform tasks efficiently.
+
+Calendar Integration: Syncs with Google Calendar to avoid conflicts and manage schedules intelligently.
+
+Task Prioritization & Reminders: Helps prioritize tasks and sends reminders for meetings or important deadlines.
+
+Context-Aware Assistance: Learns from past interactions to provide personalized suggestions and responses.
+
+Time Optimization: Reduces manual effort and saves time by automating routine administrative tasks.
+
 ## Getting Started
 
 First, run the development server:
