@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+  /* You can define your theme extensions here */
+}
+
+@layer base {
+  html, body {
+    background-color: theme("colors.white");
+    color: theme("colors.gray.900");
+  }
+}
