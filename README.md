@@ -1,6 +1,8 @@
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+The Cognitive Digital Twin project leverages AI to act as a personal assistant capable of understanding user intent, scheduling Google Meet meetings, and drafting professional emails automatically. By integrating natural language processing and intelligent decision-making, the system helps optimize productivity, reduce manual effort, and streamline daily communication tasks.
+
 ## Getting Started
 
 First, run the development server:
