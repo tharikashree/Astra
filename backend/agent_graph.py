@@ -4,8 +4,10 @@ from langchain_core.runnables import Runnable
 from typing import TypedDict, List, Union
 from datetime import datetime, timedelta
 import google.generativeai as genai
+from chat_store import save_chat_message
 from google_calendar import create_event
 from gmail_tools import send_email_message, summarize_last_email
+from notion_tools import create_notion_page
 import os
 import json
 import re
@@ -51,6 +53,24 @@ summarize_email_function = {
     "parameters": {"type": "object", "properties": {}, "required": []}
 }
 
+create_notion_function = {
+    "name": "create_notion_page",
+    "description": "Creates a page in Notion with a title and content.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "title": {
+                "type": "string",
+                "description": "Title of the Notion page"
+            },
+            "content": {
+                "type": "string",
+                "description": "Content/body of the Notion page"
+            }
+        },
+        "required": ["title", "content"]
+    }
+}
 google_api_key = os.getenv("GEMINI_API_KEY")
 if not google_api_key:
     raise ValueError("GEMINI_API_KEY is not set in the environment.")
@@ -59,7 +79,14 @@ genai.configure(api_key=google_api_key)
 
 model = genai.GenerativeModel(
     model_name="gemini-2.5-flash",
-    tools=[{"function_declarations": [schedule_meeting_function, send_email_function, summarize_email_function]}]
+    tools=[{
+    "function_declarations": [
+        schedule_meeting_function,
+        send_email_function,
+        summarize_email_function,
+        create_notion_function
+    ]
+}]
 )
 
 # ==== LangGraph State ====
@@ -103,6 +130,22 @@ def normalize_time(time_str):
         return dt.strftime("%I:%M %p")
     except:
         return time_str  # fallback
+    
+def generate_notion_content(prompt: str):
+
+    model_v2 = genai.GenerativeModel("gemini-2.5-flash")
+
+    response = model_v2.generate_content(
+        f"""
+        Generate a clean professional report for:
+
+        {prompt}
+
+        Keep it concise and well formatted.
+        """
+    )
+
+    return response.text.strip()
 
 def preprocess_user_text(user_text: str) -> str:
     """Converts relative date words like 'tomorrow' or 'today' to explicit dates."""
@@ -159,8 +202,30 @@ def extract_with_gemini(user_text: str, prev_context: dict) -> dict:
 # ==== Gemini Agent ====
 class GeminiFunctionAgent(Runnable):
     def invoke(self, state: AgentState, config=None) -> AgentState:
+        system_prompt = """
+                        You are Astra AI assistant.
+
+                        If the user asks to:
+                        - save notes
+                        - create documentation
+                        - store project info
+                        - add task
+                        - save report
+                        - create notion page
+                        - save summary
+
+                        then use create_notion_page function.
+                    """
+         
         gemini_msgs = to_gemini_messages(state["messages"])
-        response = model.generate_content(gemini_msgs)
+        contents = [
+            {
+                "role": "user",
+                "parts": [system_prompt]
+            }
+        ] + gemini_msgs
+
+        response = model.generate_content(contents)
         content = response.candidates[0].content
 
         # Check for immediate function call (used for all tools, including new email tools)
@@ -186,6 +251,78 @@ class GeminiFunctionAgent(Runnable):
             (msg.content for msg in reversed(state["messages"]) if isinstance(msg, HumanMessage)), ""
         )
 
+        save_chat_message(
+            user_id=state["user_id"],
+            role="human",
+            message=last_user_msg
+        )
+
+        # ===== Notion Intent Detection =====
+
+        notion_keywords = [
+            "notion",
+            "create page",
+            "save note",
+            "save this",
+            "research notes",
+            "documentation",
+            "store this"
+        ]
+
+        if any(word in last_user_msg.lower() for word in notion_keywords):
+
+            title = "Untitled"
+            content = "Created from Astra AI assistant"
+
+            # Pattern:
+            # Create a notion page called X containing Y
+
+            pattern = r"create a notion page called (.*?) containing (.*)"
+
+            match = re.search(pattern, last_user_msg, re.IGNORECASE)
+
+            if match:
+
+                # Extract title
+                title = match.group(1).strip()
+
+                # Extract raw content request
+                raw_content = match.group(2).strip()
+
+                # Generate professional report using Gemini
+                content = generate_notion_content(raw_content)
+
+            else:
+
+                # Fallback:
+                # Create a notion page called XYZ
+
+                pattern2 = r"create a notion page called (.*)"
+
+                match2 = re.search(pattern2, last_user_msg, re.IGNORECASE)
+
+                if match2:
+                    title = match2.group(1).strip()
+
+            ai_msg = AIMessage(
+                content="Creating a Notion page...",
+                additional_kwargs={
+                    "function_call": {
+                        "name": "create_notion_page",
+                        "args": {
+                            "title": title,
+                            "content": content
+                        }
+                    }
+                }
+            )
+
+            return {
+                "messages": state["messages"] + [ai_msg],
+                "context": state["context"],
+                "user_id": state["user_id"],
+                "next": "tool"
+            }
         prev_context = state.get("context", {})
         new_context = extract_with_gemini(last_user_msg, prev_context)
 
@@ -217,6 +354,11 @@ class GeminiFunctionAgent(Runnable):
 
         follow_up = new_context.get("follow_up") or "Could you provide more details?"
         ai_msg = AIMessage(content=follow_up)
+        save_chat_message(
+            user_id=state["user_id"],
+            role="ai",
+            message=follow_up
+        )
         return {
             "messages": state["messages"] + [ai_msg],
             "context": merged_context,
@@ -224,7 +366,63 @@ class GeminiFunctionAgent(Runnable):
             "next": "end"
         }
 
-# ==== Tool Executor ====
+# # ==== Tool Executor ====
+# def tool_executor(state: AgentState) -> AgentState:
+#     call = state["messages"][-1].additional_kwargs.get("function_call")
+#     if not call:
+#         return {**state, "next": "end"}
+
+#     tool_name = call["name"]
+#     tool_args = call["args"]
+#     user_id = state["user_id"]
+#     result = {"status": "error", "message": "Unknown function call."}
+    
+#     user_result_msg = ""
+    
+#     tool_args_with_user = {**tool_args, "user_id": user_id}
+
+#     if tool_name == "schedule_meeting":
+#         result = create_event(**tool_args_with_user)
+#         if result.get('status') == 'success':
+#             event_link = result.get('eventLink', '')
+#             if event_link:
+#                 user_result_msg = f"✅ Meeting scheduled successfully! [Join Meeting]({event_link})"
+#             else:
+#                 user_result_msg = "✅ Meeting scheduled, but no link was returned."
+#         else:
+#             user_result_msg = f"❌ Failed to schedule meeting: {result.get('message', 'Unknown error')}"
+
+
+#     elif tool_name == "send_email_message": 
+#         result = send_email_message(**tool_args_with_user)
+#         user_result_msg = f"Email sent successfully to {tool_args.get('to_email')}. Status: {result.get('status')}." if result.get('status') == 'success' else f"Failed to send email: {result.get('message', 'Unknown error')}"
+        
+#     elif tool_name == "summarize_last_email": 
+#         result = summarize_last_email(**tool_args_with_user)
+#         if result.get('status') == 'success':
+#             user_result_msg = f"Last email summary: **{result['summary']}**"
+#         else:
+#             user_result_msg = f"Failed to summarize email: {result.get('message', 'Unknown error')}"
+        
+#     else:
+#         user_result_msg = f"Unknown command: {tool_name}"
+
+#     # Append the execution result and the final user-facing reply
+#     return {
+#         "messages": state["messages"] + [
+#             ToolMessage(
+#                 name=tool_name,
+#                 content=str(result),
+#                 tool_call_id="tool_call_id_fallback"
+#             ),
+#             AIMessage(content=user_result_msg) 
+#         ],
+#         "context": state["context"],
+#         "user_id": user_id,
+#         "next": "end"
+#     }
+
+# ==== Tool Executor ==== (Only the relevant part)
 def tool_executor(state: AgentState) -> AgentState:
     call = state["messages"][-1].additional_kwargs.get("function_call")
     if not call:
@@ -241,7 +439,19 @@ def tool_executor(state: AgentState) -> AgentState:
 
     if tool_name == "schedule_meeting":
         result = create_event(**tool_args_with_user)
-        user_result_msg = f"Meeting scheduled: {result.get('eventLink', 'See result for details')}" if result.get('status') == 'success' else f"Failed to schedule: {result.get('message', 'Unknown error')}"
+        if result.get('status') == 'success':
+            meet_link = result.get('meetLink', '')
+            event_link = result.get('eventLink', '')
+
+            # Compose a human-friendly markdown message
+            md_parts = ["✅ Meeting scheduled successfully!"]
+            if meet_link:
+                md_parts.append(f"[Join Meeting]({meet_link})")
+            if event_link:
+                md_parts.append(f"[View Event]({event_link})")
+            user_result_msg = "\n\n".join(md_parts)
+        else:
+            user_result_msg = f"❌ Failed to schedule meeting: {result.get('message', 'Unknown error')}"
 
     elif tool_name == "send_email_message": 
         result = send_email_message(**tool_args_with_user)
@@ -253,11 +463,29 @@ def tool_executor(state: AgentState) -> AgentState:
             user_result_msg = f"Last email summary: **{result['summary']}**"
         else:
             user_result_msg = f"Failed to summarize email: {result.get('message', 'Unknown error')}"
+
+    elif tool_name == "create_notion_page":
+        result = create_notion_page(**tool_args_with_user)
+
+        if result.get("status") == "success":
+            notion_url = result.get("url")
+            user_result_msg = (
+            f"✅ Successfully created a Notion page.\n\n"
+            f"[Open Notion Page]({notion_url})"
+        )
+            
+        else:
+            user_result_msg = f"❌ Failed to create Notion page: {result.get('message')}"
         
     else:
         user_result_msg = f"Unknown command: {tool_name}"
 
-    # Append the execution result and the final user-facing reply
+    save_chat_message(
+        user_id=user_id,
+        role="ai",
+        message=user_result_msg
+    )
+        # Append the execution result and the final user-facing reply
     return {
         "messages": state["messages"] + [
             ToolMessage(

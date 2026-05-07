@@ -25,7 +25,7 @@ async def chat(request: Request):
 
     if not user_id:
          raise HTTPException(status_code=401, detail="User ID (or email) is required for API access.")
-
+    
     # Pass both user message and current context to agent
     inputs = {
         "messages": [HumanMessage(content=user_input)],

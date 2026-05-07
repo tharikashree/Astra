@@ -3,7 +3,10 @@
 import React, { useState } from 'react';
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useEffect} from "react";
-import { Calendar, MessageSquare, Mail, BarChart3, Clock, Menu, X, Send, User, Lock, ArrowRight, CheckCircle, Bell, Settings, LogOut } from 'lucide-react';
+import ReactMarkdown from "react-markdown";
+import Link from "next/link";
+import { Calendar, MessageSquare, Mail, Video, ExternalLink, BarChart3, Clock, Menu, X, Send, User, Lock, ArrowRight, CheckCircle, Bell, Settings, LogOut } from 'lucide-react';
+
 
 export default function AstraApp() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -28,46 +31,25 @@ export default function AstraApp() {
         
         <form onSubmit={(e) => { e.preventDefault(); }}>
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-              <input 
-                type="email" 
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                placeholder="you@example.com"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-              <input 
-                type="password" 
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <label className="flex items-center">
-                <input type="checkbox" className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                <span className="ml-2 text-sm text-gray-600">Remember me</span>
-              </label>
-              <a href="#" className="text-sm text-indigo-600 hover:text-indigo-700">Forgot password?</a>
-            </div>
             
             <button 
               type="button"
               onClick={() => signIn('google')}
-              className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition font-medium flex items-center justify-center gap-2"
+              className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-medium flex items-center justify-center gap-2"
             >
-              Sign in with Google (Required) <ArrowRight className="w-4 h-4" />
+              <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Sign in with Google <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </form>
         
         <p className="text-center mt-6 text-gray-600">
-          Don&apos;t have an account? 
+          Dont have an account? 
           <button onClick={() => setCurrentPage('signup')} className="text-indigo-600 hover:text-indigo-700 font-medium ml-1">
             Sign up
           </button>
@@ -89,45 +71,7 @@ export default function AstraApp() {
         
         <form onSubmit={(e) => { e.preventDefault(); signIn('google'); }}>
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-              <input 
-                type="text" 
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                placeholder="John Doe"
-                required
-              />
-            </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-              <input 
-                type="email" 
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                placeholder="you@example.com"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-              <input 
-                type="password" 
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
-              <input 
-                type="password" 
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-                placeholder="••••••••"
-                required
-              />
-            </div>
             
             <label className="flex items-start">
               <input type="checkbox" className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 mt-1" required />
@@ -138,8 +82,13 @@ export default function AstraApp() {
               type="submit"
               className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-medium flex items-center justify-center gap-2"
               onClick={() => signIn('google')}
-            >
-              Create Account (with Google) <ArrowRight className="w-4 h-4" />
+            ><svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Sign up with Google <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </form>
@@ -304,130 +253,418 @@ export default function AstraApp() {
   );
 
   // Corrected Chat Interface
-  const ChatInterface = () => {
-    const { data: session } = useSession(); 
+  // const ChatInterface = () => {
+  //   const { data: session } = useSession(); 
     
-    const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>(
-      [{ role: 'assistant', content: `Hello! I'm your Astra assistant. You are signed in as **${session?.user?.email}**. Ask me to **schedule a meeting**, **send an email**, or **summarize your last email**.` }]
-    );
-    const [inputMessage, setInputMessage] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const [context, setContext] = useState({}); // State for conversational context
+  //   const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>(
+  //     [{ role: 'assistant', content: `Hello! I'm your Astra assistant. You are signed in as ${session?.user?.email}. Ask me to schedule a meeting, send an email, or summarize your last email.` }]
+  //   );
+  //   const [inputMessage, setInputMessage] = useState("");
+  //   const [isLoading, setIsLoading] = useState(false);
+  //   const [context, setContext] = useState({}); // State for conversational context
 
-    const handleSendMessage = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!inputMessage.trim() || isLoading) return;
+  //   const handleSendMessage = async (e: React.FormEvent) => {
+  //     e.preventDefault();
+  //     if (!inputMessage.trim() || isLoading) return;
 
-      // CRITICAL: Use the user's authenticated email as the persistent user_id
-      const userId = session?.user?.email;
+  //     // CRITICAL: Use the user's authenticated email as the persistent user_id
+  //     const userId = session?.user?.email;
 
-      if (!userId) {
-          setChatMessages((prev) => [...prev, { role: "assistant", content: "❌ Error: User identifier is missing. Please log in with Google to use the assistant." }]);
-          setInputMessage("");
-          return;
-      }
+  //     if (!userId) {
+  //         setChatMessages((prev) => [...prev, { role: "assistant", content: "❌ Error: User identifier is missing. Please log in with Google to use the assistant." }]);
+  //         setInputMessage("");
+  //         return;
+  //     }
 
-      const userMessage = inputMessage;
-      setChatMessages((prev) => [...prev, { role: "user", content: userMessage }]);
-      setInputMessage("");
-      setIsLoading(true);
+  //     const userMessage = inputMessage;
+  //     setChatMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+  //     setInputMessage("");
+  //     setIsLoading(true);
 
-      try {
-        const res = await fetch("http://localhost:8000/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: userMessage,
-            context: context,
-            user_id: userId, // <-- CRITICAL: Pass the user ID (email)
-          }),
-        });
+  //     try {
+  //       const res = await fetch("http://localhost:8000/chat", {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({
+  //           message: userMessage,
+  //           context: context,
+  //           user_id: userId, // <-- CRITICAL: Pass the user ID (email)
+  //         }),
+  //       });
 
-        const data = await res.json();
-        setContext(data.context);
+  //       const data = await res.json();
+  //       setContext(data.context);
         
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: data.reply || "Sorry, I encountered an unknown error.",
-          },
-        ]);
-      } catch (error) {
-        console.error("Chat API Error:", error);
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: "Sorry, I couldn't connect to the FastAPI backend service. Check the server status (http://localhost:8000/chat).",
-          },
-        ]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  //       setChatMessages((prev) => [
+  //         ...prev,
+  //         {
+  //           role: "assistant",
+  //           content: data.reply || "Sorry, I encountered an unknown error.",
+  //         },
+  //       ]);
+  //     } catch (error) {
+  //       console.error("Chat API Error:", error);
+  //       setChatMessages((prev) => [
+  //         ...prev,
+  //         {
+  //           role: "assistant",
+  //           content: "Sorry, I couldn't connect to the FastAPI backend service. Check the server status (http://localhost:8000/chat).",
+  //         },
+  //       ]);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
 
-    return (
-      <div className="flex-1 flex flex-col bg-gray-50">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold text-gray-800">Chat Assistant</h2>
-            <p className="text-sm text-gray-600">Your AI-powered productivity companion</p>
-          </div>
+  //   return (
+  //     <div className="flex-1 flex flex-col bg-gray-50">
+  //       {/* Header */}
+  //       <div className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+  //         <div>
+  //           <h2 className="text-xl font-bold text-gray-800">Chat Assistant</h2>
+  //           <p className="text-sm text-gray-600">Your AI-powered productivity companion</p>
+  //         </div>
+  //         <button className="p-2 hover:bg-gray-100 rounded-lg">
+  //           <Bell className="w-5 h-5 text-gray-600" />
+  //         </button>
+  //       </div>
+
+  //       {/* Chat Messages */}
+  //       <div className="flex-1 overflow-y-auto p-6 space-y-4">
+  //         {chatMessages.map((msg, idx) => (
+  //           <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+  //             <div
+  //               className={`max-w-2xl rounded-2xl px-6 py-4 ${
+  //                 msg.role === "user"
+  //                   ? "bg-indigo-600 text-white"
+  //                   : "bg-white border border-gray-200 text-gray-800"
+  //               }`}
+  //             >
+  //               <p>{msg.content}</p>
+  //             </div>
+  //           </div>
+  //         ))}
+  //         {/* Loading Indicator */}
+  //         {isLoading && (
+  //             <div className="flex justify-start">
+  //                 <div className="max-w-xs rounded-2xl px-6 py-4 bg-white border border-gray-200 text-gray-800">
+  //                     <div className="animate-pulse">Astra is typing...</div>
+  //                 </div>
+  //             </div>
+  //         )}
+  //       </div>
+
+  //       {/* Input Area */}
+  //       <div className="bg-white border-t border-gray-200 p-4">
+  //         <form onSubmit={handleSendMessage} className="flex gap-2">
+  //           <input
+  //             type="text"
+  //             value={inputMessage}
+  //             onChange={(e) => setInputMessage(e.target.value)}
+  //             placeholder={!session ? "Please log in to chat..." : "Ask Astra anything, e.g., 'send email to...'"}
+  //             className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+  //             disabled={!session || isLoading}
+  //           />
+  //           <button
+  //             type="submit"
+  //             className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center gap-2 disabled:bg-gray-400"
+  //             disabled={!session || isLoading}
+  //           >
+  //             <Send className="w-5 h-5" />
+  //           </button>
+  //         </form>
+  //       </div>
+  //     </div>
+  //   );
+  // };
+const ChatInterface = () => {
+  const { data: session } = useSession();
+  const userId = session?.user?.email;
+  
+  // Load messages from state (persisted via useEffect)
+  const [chatMessages, setChatMessages] = useState(() => {
+    const stored = sessionStorage.getItem(`chat_messages_${userId}`);
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        console.error('Failed to parse stored messages:', e);
+      }
+    }
+    return [{ 
+      role: 'assistant', 
+      content: `Hello! I'm your Astra assistant. You are signed in as ${session?.user?.email}. Ask me to schedule a meeting, send an email, or summarize your last email.` 
+    }];
+  });
+  
+  const [inputMessage, setInputMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [context, setContext] = useState(() => {
+    const stored = sessionStorage.getItem(`chat_context_${userId}`);
+    return stored ? JSON.parse(stored) : {};
+  });
+
+  // Persist messages whenever they change
+  useEffect(() => {
+    if (userId && chatMessages.length > 0) {
+      sessionStorage.setItem(`chat_messages_${userId}`, JSON.stringify(chatMessages));
+    }
+  }, [chatMessages, userId]);
+
+  // Persist context whenever it changes
+  useEffect(() => {
+    if (userId) {
+      sessionStorage.setItem(`chat_context_${userId}`, JSON.stringify(context));
+    }
+  }, [context, userId]);
+
+  // Format Gemini API response
+  const formatGeminiResponse = (text) => {
+    if (!text) return "Sorry, I encountered an unknown error.";
+    
+    // Remove excessive newlines
+    let formatted = text.replace(/\n{3,}/g, '\n\n');
+    
+    // Convert markdown-style formatting to HTML-like structure for rendering
+    // Bold: **text** or __text__
+    formatted = formatted.replace(/\*\*(.+?)\*\*/g, '✦ $1');
+    formatted = formatted.replace(/__(.+?)__/g, '✦ $1');
+    
+    // Italic: *text* or _text_
+    formatted = formatted.replace(/\*(.+?)\*/g, '$1');
+    formatted = formatted.replace(/_(.+?)_/g, '$1');
+    
+    // Code blocks: ```code```
+    formatted = formatted.replace(/```[\s\S]*?```/g, (match) => {
+      return '\n' + match.replace(/```/g, '') + '\n';
+    });
+    
+    // Inline code: `code`
+    formatted = formatted.replace(/`([^`]+)`/g, '[$1]');
+    
+    // Clean up any remaining artifacts
+    formatted = formatted.trim();
+    
+    return formatted;
+  };
+
+  // Parse message content to extract links and format them
+  const parseMessageContent = (content) => {
+    const parts = [];
+    let lastIndex = 0;
+    
+    // Regex to match markdown links: [text](url)
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    let match;
+    
+    while ((match = linkRegex.exec(content)) !== null) {
+      // Add text before the link
+      if (match.index > lastIndex) {
+        parts.push({
+          type: 'text',
+          content: content.substring(lastIndex, match.index)
+        });
+      }
+      
+      // Add the link
+      parts.push({
+        type: 'link',
+        text: match[1],
+        url: match[2]
+      });
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    if (lastIndex < content.length) {
+      parts.push({
+        type: 'text',
+        content: content.substring(lastIndex)
+      });
+    }
+    
+    return parts.length > 0 ? parts : [{ type: 'text', content }];
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!inputMessage.trim() || isLoading) return;
+
+    if (!userId) {
+      setChatMessages((prev) => [...prev, { 
+        role: "assistant", 
+        content: "❌ Error: User identifier is missing. Please log in with Google to use the assistant." 
+      }]);
+      setInputMessage("");
+      return;
+    }
+
+    const userMessage = inputMessage;
+    setChatMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    setInputMessage("");
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("http://localhost:8000/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMessage,
+          context: context,
+          user_id: userId,
+        }),
+      });
+
+      const data = await res.json();
+      setContext(data.context);
+      
+      // Format the response before adding to chat
+      const formattedReply = formatGeminiResponse(data.reply);
+      
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: formattedReply,
+        },
+      ]);
+    } catch (error) {
+      console.error("Chat API Error:", error);
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Sorry, I couldn't connect to the FastAPI backend service. Check the server status (http://localhost:8000/chat).",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Clear chat function
+  const handleClearChat = () => {
+    const initialMessage = { 
+      role: 'assistant', 
+      content: `Hello! I'm your Astra assistant. You are signed in as ${session?.user?.email}. Ask me to schedule a meeting, send an email, or summarize your last email.` 
+    };
+    setChatMessages([initialMessage]);
+    setContext({});
+    if (userId) {
+      sessionStorage.removeItem(`chat_messages_${userId}`);
+      sessionStorage.removeItem(`chat_context_${userId}`);
+    }
+  };
+
+  // Render formatted message with preserved whitespace and line breaks
+  const renderMessage = (content) => {
+    const parts = parseMessageContent(content);
+    
+    return parts.map((part, i) => {
+      if (part.type === 'link') {
+        return (
+          <a
+            key={i}
+            href={part.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg font-medium transition-colors duration-200 border border-indigo-200 hover:border-indigo-300"
+          >
+            {part.text}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        );
+      }
+      
+      // Handle text with line breaks
+      return part.content.split('\n').map((line, j) => (
+        <React.Fragment key={`${i}-${j}`}>
+          {line}
+          {j < part.content.split('\n').length - 1 && <br />}
+        </React.Fragment>
+      ));
+    });
+  };
+
+  return (
+    <div className="flex-1 flex flex-col bg-gray-50 h-screen">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">Chat Assistant</h2>
+          <p className="text-sm text-gray-600">Your AI-powered productivity companion</p>
+        </div>
+        <div className="flex gap-2">
+          <button 
+            onClick={handleClearChat}
+            className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition"
+          >
+            Clear Chat
+          </button>
           <button className="p-2 hover:bg-gray-100 rounded-lg">
             <Bell className="w-5 h-5 text-gray-600" />
           </button>
         </div>
+      </div>
 
-        {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {chatMessages.map((msg, idx) => (
-            <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`max-w-2xl rounded-2xl px-6 py-4 ${
-                  msg.role === "user"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-white border border-gray-200 text-gray-800"
-                }`}
-              >
-                <p>{msg.content}</p>
-              </div>
-            </div>
-          ))}
-          {/* Loading Indicator */}
-          {isLoading && (
-              <div className="flex justify-start">
-                  <div className="max-w-xs rounded-2xl px-6 py-4 bg-white border border-gray-200 text-gray-800">
-                      <div className="animate-pulse">Astra is typing...</div>
-                  </div>
-              </div>
-          )}
-        </div>
-
-        {/* Input Area */}
-        <div className="bg-white border-t border-gray-200 p-4">
-          <form onSubmit={handleSendMessage} className="flex gap-2">
-            <input
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              placeholder={!session ? "Please log in to chat..." : "Ask Astra anything, e.g., 'send email to...'"}
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
-              disabled={!session || isLoading}
-            />
-            <button
-              type="submit"
-              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center gap-2 disabled:bg-gray-400"
-              disabled={!session || isLoading}
+      {/* Chat Messages */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        {chatMessages.map((msg, idx) => (
+          <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div
+              className={`max-w-2xl rounded-2xl px-6 py-4 ${
+                msg.role === "user"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-white border border-gray-200 text-gray-800"
+              }`}
+              style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
             >
-              <Send className="w-5 h-5" />
-            </button>
-          </form>
+              <p className="leading-relaxed">{renderMessage(msg.content)}</p>
+            </div>
+          </div>
+        ))}
+        {/* Loading Indicator */}
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="max-w-xs rounded-2xl px-6 py-4 bg-white border border-gray-200 text-gray-800">
+              <div className="animate-pulse">Astra is typing...</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Input Area */}
+      <div className="bg-white border-t border-gray-200 p-4">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage(e);
+              }
+            }}
+            placeholder={!session ? "Please log in to chat..." : "Ask Astra anything, e.g., 'send email to...'"}
+            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+            disabled={!session || isLoading}
+          />
+          <button
+            onClick={handleSendMessage}
+            className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center gap-2 disabled:bg-gray-400"
+            disabled={!session || isLoading}
+          >
+            <Send className="w-5 h-5" />
+          </button>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   // Calendar View
  const CalendarView = () => {
@@ -440,14 +677,12 @@ export default function AstraApp() {
       if (!session) return;
       setLoading(true);
       try {
-        // This frontend API route relies on the short-lived access token,
-        // which NextAuth provides via its JWT/session handling for the calendar API
         const res = await fetch("/api/calendar/events");
         const data = await res.json();
         if (data.items) setEvents(data.items);
       } catch (err) {
         console.error("Error fetching calendar events:", err);
-      } finally {
+      } finally { 
         setLoading(false);
       }
     }
@@ -488,34 +723,34 @@ export default function AstraApp() {
                 Refresh
               </button>
               <button
-  onClick={async () => {
-    const event = {
-      summary: "Test Event from Astra",
-      start: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour from now
-      end: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
-    };
+                onClick={async () => {
+                  const event = {
+                    summary: "Test Event from Astra",
+                    description: "This is a test meeting created with Google Meet",
+                    start: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+                    end: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+                    attendees: [session?.user?.email],
+                  };
 
-    const res = await fetch("/api/calendar/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(event),
-    });
+                  const res = await fetch("/api/calendar/events", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(event),
+                  });
 
-    const data = await res.json();
-    if (res.ok) {
-      // Use custom modal instead of alert in production
-      alert("✅ Event created: " + data.event.summary);
-      window.location.reload();
-    } else {
-      // Use custom modal instead of alert in production
-      alert("❌ Failed to create event: " + data.error);
-    }
-  }}
-  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
->
-  + New Event
-</button>
-
+                  const data = await res.json();
+                  if (res.ok) {
+                    alert(`✅ Event created: ${data.event.summary}\n${data.meetLink ? `Meet Link: ${data.meetLink}` : ''}`);
+                    window.location.reload();
+                  } else {
+                    alert("❌ Failed to create event: " + data.error);
+                  }
+                }}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+              >
+                <Video className="w-4 h-4" />
+                + New Meeting
+              </button>
             </div>
           </div>
 
@@ -572,10 +807,18 @@ export default function AstraApp() {
                   event.summary?.toLowerCase().includes("focus") ? "focus" :
                   "task";
 
+                // Extract Google Meet link from conferenceData or hangoutLink
+                const meetLink = 
+                  event.hangoutLink || 
+                  event.conferenceData?.entryPoints?.find(
+                    (entry: any) => entry.entryPointType === "video"
+                  )?.uri ||
+                  null;
+
                 return (
                   <div
                     key={idx}
-                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
+                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition"
                   >
                     <div className="text-sm font-medium text-gray-600 w-24">
                       {start ? new Date(start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--"}
@@ -593,8 +836,29 @@ export default function AstraApp() {
                     />
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-800">{event.summary || "Untitled Event"}</h4>
-                      <p className="text-sm text-gray-600 capitalize">{type}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-sm text-gray-600 capitalize">{type}</p>
+                        {meetLink && (
+                          <>
+                            <span className="text-gray-400">•</span>
+                            <Video className="w-3 h-3 text-green-600" />
+                            <span className="text-xs text-green-600 font-medium">Google Meet</span>
+                          </>
+                        )}
+                      </div>
                     </div>
+                    {meetLink && (
+                      <a
+                        href={meetLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg font-medium transition-colors duration-200 border border-green-200 hover:border-green-300 flex items-center gap-2"
+                      >
+                        <Video className="w-4 h-4" />
+                        Join Meeting
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
                   </div>
                 );
               })}

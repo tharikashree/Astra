@@ -43,7 +43,8 @@ def store_credentials(user_id: str, credentials: Credentials):
             "user_id": user_id,
             "google_credentials": creds_dict
         }).execute()
-        # print(f"Successfully stored credentials for user: {user_id}")
+        print(f"Successfully stored credentials for user: {user_id}")
+        
     except Exception as e:
         print(f"Supabase Store Error for {user_id}: {e}")
 
@@ -60,10 +61,11 @@ def load_credentials(user_id: str) -> Optional[Credentials]:
             .execute()
         
         data = response.data
+        # print(type(data), data) 
         if not data or not data.get('google_credentials'):
             return None
             
-        creds_info = data['google_credentials']
+        creds_info = json.loads(data['google_credentials'])
         
         # 2. Recreate Credentials object
         # Credentials.from_authorized_user_info correctly handles the stored data
@@ -71,13 +73,13 @@ def load_credentials(user_id: str) -> Optional[Credentials]:
         
         # 3. Check for expiry and refresh if needed
         if creds.expired and creds.refresh_token:
-            # print(f"Token expired for {user_id}. Attempting refresh...")
+            print(f"Token expired for {user_id}. Attempting refresh...")
             creds.refresh(Request())
             # Store the refreshed credentials back to the database
             store_credentials(user_id, creds)
         
         if not creds.valid:
-            # print(f"Credentials invalid/not refreshable for {user_id}.")
+            print(f"Credentials invalid/not refreshable for {user_id}.")
             return None
             
         return creds
@@ -85,5 +87,5 @@ def load_credentials(user_id: str) -> Optional[Credentials]:
     except Exception as e:
         # This catches exceptions like "Postgrest API error: The result contains 0 rows"
         # which means the user has not authorized yet.
-        # print(f"Supabase/Auth Load Error for {user_id}: {e}")
+        print(f"Supabase/Auth Load Error for {user_id}: {e}")
         return None
