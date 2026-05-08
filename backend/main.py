@@ -4,6 +4,7 @@ from langchain_core.messages import HumanMessage
 from agent_graph import agent_executor
 from fastapi.responses import JSONResponse
 from auth_store import router as auth_router   # Import the auth_store module
+from chat_store import save_chat_message
 
 app = FastAPI()
 app.include_router(auth_router, prefix="/auth", tags=["auth"]) # Import and include the auth_store router
